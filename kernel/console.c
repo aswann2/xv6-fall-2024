@@ -155,6 +155,9 @@ consoleintr(int c)
       consputc(BACKSPACE);
     }
     break;
+  case C('G'): // Display process history
+    prochistory();
+    break;
   default:
     if(c != 0 && cons.e-cons.r < INPUT_BUF_SIZE){
       c = (c == '\r') ? '\n' : c;

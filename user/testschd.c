@@ -5,7 +5,6 @@
 int priorities[3] = { 50, 51, 52 };
 int p1[2], p2[2], p3[2];
 
-/*
 void proc1(char *name) {
   fprintf(1, "Child %s:%d, priority %d!\n", name, getpid(), getpriority());
   setpriority(priorities[0]);
@@ -53,7 +52,6 @@ void proc3(char *name) {
   fprintf(1, "Child %s:%d with priority %d has finished!\n", name, getpid(), getpriority());
   exit(0);
 }
-*/
 
 int main(int argc, char **argv)
 {
@@ -64,14 +62,13 @@ int main(int argc, char **argv)
   if (argc >= 3)
     priorities[2] = atoi(argv[3]);
 
-  //int childprocs = 3;
-  //setpriority(100); // parent has highest priority
+  int childprocs = 3;
+  setpriority(100); // parent has highest priority
 
   pipe(p1);
   pipe(p2);
   pipe(p3);
 
-/*
   int pids[3];
   pids[0] = spoon("Coletta");
   if (pids[0] == 0) {         // child
@@ -115,6 +112,5 @@ int main(int argc, char **argv)
     fprintf(1, "Fork 1 failed\n");
     exit(0);
   }
-*/
   exit(0);
 }

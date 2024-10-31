@@ -590,23 +590,35 @@ scheduler(void)
       }
     }
     else if (scheduler_policy == SCHED_PRIOR) {
-      for(p = proc; p < &proc[NPROC]; p++) {
+      struct proc *highest_priority_proc = 0;
+      int highest_priority = -1;
+
+      // Find runnable proc with highest pri
+      for (p = proc; p < &proc[NPROC]; p++) {
         acquire(&p->lock);
-        if(p->state == RUNNABLE) {
-          proc_hist(p);
-
-          // Switch to chosen process.  It is the process's job
-          // to release its lock and then reacquire it
-          // before jumping back to us.
-          p->state = RUNNING;
-          c->proc = p;
-          swtch(&c->context, &p->context);
-
-          // Process is done running for now.
-          // It should have changed its p->state before coming back.
-          c->proc = 0;
+        if (p->state == RUNNABLE) {
+          if (p->priority > highest_priority) {
+            highest_priority = p->priority;
+            highest_priority_proc = p;
+          } else if (p->priority == highest_priority) {
+            // Use RR if pri's are the same
+            if (highest_priority_proc == 0) {
+              highest_priority_proc = p;
+            }
+          }
         }
         release(&p->lock);
+      }
+
+      // Run the selected highest priority process
+      if (highest_priority_proc) {
+        acquire(&highest_priority_proc->lock);
+        proc_hist(highest_priority_proc);
+        highest_priority_proc->state = RUNNING;
+        c->proc = highest_priority_proc;
+        swtch(&c->context, &highest_priority_proc->context);
+        c->proc = 0;
+        release(&highest_priority_proc->lock);
       }
     }
   }

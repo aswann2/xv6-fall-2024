@@ -100,3 +100,38 @@ sys_prochist(void)
   return 0;
 }
 
+uint64
+sys_setpriority(void)
+{
+    // get pri arg num
+    int pri;
+    argint(0, &pri);
+
+    struct proc *p = myproc();
+    acquire(&p->lock);
+    p->priority = pri;
+    release(&p->lock);
+    
+    return 0;
+}
+
+uint64
+sys_getpriority(void)
+{
+    struct proc *p = myproc();
+    int pri;
+
+    acquire(&p->lock);
+    pri = p-> priority;
+    release(&p->lock);
+    
+    return pri;
+}
+
+uint64
+sys_spoon(void)
+{
+    char name;
+    argstr(0, &name, MAXPATH);
+    return spoon(&name);
+}

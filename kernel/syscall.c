@@ -103,7 +103,10 @@ extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_trace(void);
 extern uint64 sys_prochist(void);
-
+extern uint64 sys_setpriority(void);
+extern uint64 sys_getpriority(void);
+extern uint64 sys_spoon(void);
+extern uint64 sys_prochist(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -130,6 +133,10 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_prochist] sys_prochist,
+[SYS_setpriority] sys_setpriority,
+[SYS_getpriority] sys_getpriority,
+[SYS_spoon] sys_spoon,
+[SYS_prochist] sys_prochist,
 };
 
 static char *syscall_name[] = {
@@ -154,6 +161,10 @@ static char *syscall_name[] = {
 [SYS_link]    "link",
 [SYS_mkdir]   "mkdir",
 [SYS_close]   "close",
+[SYS_prochist] "prochist",
+[SYS_setpriority] "setpriority",
+[SYS_getpriority] "getpriority",
+[SYS_spoon] "spoon",
 [SYS_prochist] "prochist",
 };
 

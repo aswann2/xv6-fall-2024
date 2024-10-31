@@ -14,7 +14,9 @@ sub entry {
     print " ecall\n";
     print " ret\n";
 }
-	
+
+entry("setpriority");
+entry("getpriority");
 entry("fork");
 entry("exit");
 entry("wait");
@@ -36,3 +38,5 @@ entry("getpid");
 entry("sbrk");
 entry("sleep");
 entry("uptime");
+entry("spoon");
+entry("prochist");

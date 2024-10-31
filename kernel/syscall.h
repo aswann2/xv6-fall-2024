@@ -21,3 +21,7 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_prochist 22
+#define SYS_setpriority 23
+#define SYS_getpriority 24
+#define SYS_spoon  25
+#define SYS_prchist 26
