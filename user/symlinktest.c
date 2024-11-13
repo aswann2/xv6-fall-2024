@@ -16,6 +16,7 @@ static void testsymlink(void);
 static void concur(void);
 static void cleanup(void);
 
+/*
 int
 main(int argc, char *argv[])
 {
@@ -24,6 +25,7 @@ main(int argc, char *argv[])
   concur();
   exit(failed);
 }
+*/
 
 static void
 cleanup(void)

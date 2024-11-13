@@ -382,13 +382,14 @@ iunlockput(struct inode *ip)
 static uint
 bmap(struct inode *ip, uint bn)
 {
-  uint addr, *a;
-  struct buf *bp;
+  uint addr, *a, *aa;
+  struct buf *bp, *bp2;
 
-  if(bn < NDIRECT){
-    if((addr = ip->addrs[bn]) == 0){
+  if (bn < NDIRECT) {
+    // Direct blocks
+    if ((addr = ip->addrs[bn]) == 0) {
       addr = balloc(ip->dev);
-      if(addr == 0)
+      if (addr == 0)
         return 0;
       ip->addrs[bn] = addr;
     }
@@ -396,19 +397,19 @@ bmap(struct inode *ip, uint bn)
   }
   bn -= NDIRECT;
 
-  if(bn < NINDIRECT){
-    // Load indirect block, allocating if necessary.
-    if((addr = ip->addrs[NDIRECT]) == 0){
+  if (bn < NINDIRECT) {
+    // Singly-indirect block
+    if ((addr = ip->addrs[NDIRECT]) == 0) {
       addr = balloc(ip->dev);
-      if(addr == 0)
+      if (addr == 0)
         return 0;
       ip->addrs[NDIRECT] = addr;
     }
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
-    if((addr = a[bn]) == 0){
+    if ((addr = a[bn]) == 0) {
       addr = balloc(ip->dev);
-      if(addr){
+      if (addr) {
         a[bn] = addr;
         log_write(bp);
       }
@@ -416,8 +417,47 @@ bmap(struct inode *ip, uint bn)
     brelse(bp);
     return addr;
   }
+  bn -= NINDIRECT;
 
-  panic("bmap: out of range");
+  if (bn < NINDIRECT * NINDIRECT) {
+    // Doubly-indirect block
+    if ((addr = ip->addrs[NDIRECT + 1]) == 0) {
+      addr = balloc(ip->dev);
+      if (addr == 0)
+        return 0;
+      ip->addrs[NDIRECT + 1] = addr;
+    }
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+
+    uint idx1 = bn / NINDIRECT;
+    uint idx2 = bn % NINDIRECT;
+
+    if ((addr = a[idx1]) == 0) {
+      addr = balloc(ip->dev);
+      if (addr == 0) {
+        brelse(bp);
+        return 0;
+      }
+      a[idx1] = addr;
+      log_write(bp);
+    }
+    brelse(bp);
+
+    bp2 = bread(ip->dev, a[idx1]);
+    aa = (uint*)bp2->data;
+    if ((addr = aa[idx2]) == 0) {
+      addr = balloc(ip->dev);
+      if (addr) {
+        aa[idx2] = addr;
+        log_write(bp2);
+      }
+    }
+    brelse(bp2);
+    return addr;
+  }
+
+  return 0; // Out of range
 }
 
 // Truncate inode (discard contents).
@@ -425,32 +465,59 @@ bmap(struct inode *ip, uint bn)
 void
 itrunc(struct inode *ip)
 {
-  int i, j;
-  struct buf *bp;
-  uint *a;
+  int i, j, k;
+  struct buf *bp, *bp2;
+  uint *a, *aa;
 
-  for(i = 0; i < NDIRECT; i++){
-    if(ip->addrs[i]){
+  // Free direct blocks
+  for (i = 0; i < NDIRECT; i++) {
+    if (ip->addrs[i]) {
       bfree(ip->dev, ip->addrs[i]);
       ip->addrs[i] = 0;
     }
   }
 
-  if(ip->addrs[NDIRECT]){
+  // Free singly-indirect blocks
+  if (ip->addrs[NDIRECT]) {
     bp = bread(ip->dev, ip->addrs[NDIRECT]);
     a = (uint*)bp->data;
-    for(j = 0; j < NINDIRECT; j++){
-      if(a[j])
+    for (j = 0; j < NINDIRECT; j++) {
+      if (a[j]) {
         bfree(ip->dev, a[j]);
+      }
     }
     brelse(bp);
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
   }
 
+  // Free doubly-indirect blocks
+  if (ip->addrs[NDIRECT + 1]) {
+    bp = bread(ip->dev, ip->addrs[NDIRECT + 1]);
+    a = (uint*)bp->data;
+    for (j = 0; j < NINDIRECT; j++) {
+      if (a[j]) {
+        bp2 = bread(ip->dev, a[j]);
+        aa = (uint*)bp2->data;
+        for (k = 0; k < NINDIRECT; k++) {
+          if (aa[k]) {
+            bfree(ip->dev, aa[k]);
+          }
+        }
+        brelse(bp2);
+        bfree(ip->dev, a[j]);
+      }
+    }
+    brelse(bp);
+    bfree(ip->dev, ip->addrs[NDIRECT + 1]);
+    ip->addrs[NDIRECT + 1] = 0;
+  }
+
+  // Reset inode size and update
   ip->size = 0;
   iupdate(ip);
 }
+
 
 // Copy stat information from inode.
 // Caller must hold ip->lock.
